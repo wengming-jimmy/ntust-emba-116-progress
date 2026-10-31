@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>116 新研營籌備進度｜組長後台</title>
+<style>
+body{font-family:system-ui,-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;margin:0;padding:16px;background:#f6f8f7;color:#222}
+h1{font-size:22px} p{color:#555;line-height:1.6}
+.card{background:#fff;border:1px solid #ddd;border-radius:12px;padding:14px;margin:12px 0}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{border-bottom:1px solid #eee;padding:8px;text-align:left;vertical-align:top}
+select,input,textarea{padding:8px;border:1px solid #ccc;border-radius:8px;width:100%;box-sizing:border-box}
+button{padding:10px 16px;border:0;border-radius:8px;background:#1a7f64;color:#fff}
+.note{font-size:13px;color:#666}
+</style>
+</head>
+<body>
+<h1>116 新研營籌備進度｜組長後台</h1>
+<p>組長只能改自己組的進度。決策組密碼可以改全部組別。密碼由 Jimmy 在試算表「組別密碼」分頁設定，不寫在公開程式碼裡，後端會核對密碼，密碼錯誤不會寫入。公開頁沒有這個後台的連結。</p>
+<div class="card">
+<p><label>組別 <select id="group"></select></label></p>
+<p><label>組別密碼 <input id="pwd" type="password" placeholder="請輸入該組密碼"></label></p>
+<p><label>更新人姓名 <input id="who" placeholder="例如：活動組組長"></label></p>
+<p><button onclick="load()">載入我這組的進度</button> <span id="msg" class="note"></span></p>
+<p class="note" id="meta"></p>
+</div>
+<div class="card" style="overflow-x:auto">
+<table id="tbl"><thead><tr><th>編號</th><th>工作項目</th><th>狀態</th><th>進度%</th><th>負責人</th><th>預定完成日</th><th>實際完成日</th><th>追蹤備註</th><th></th></tr></thead><tbody></tbody></table>
+</div>
+<p class="note">版本 v1｜後台解鎖後自動載入並顯示筆數與載入時間｜在 iPhone 內建瀏覽或 App 內開網頁可能看不到最新資料，請用 Chrome 直接開啟。</p>
+<script src="config.js"></script>
+<script>
+const GROUPS=["決策組","行政組","活動組","財務組","資訊組","文宣組","公關組","隊輔組","機動組","攝影組","競賽組","人事組","各組組長","全體"];
+const sel=document.getElementById('group'); GROUPS.forEach(g=>{const o=document.createElement('option');o.textContent=g;sel.appendChild(o);});
+let rows=[];
+async function load(){
+  if(!window.API_URL){document.getElementById('msg').textContent="後端尚未接通，請先完成 Apps Script 部署並填入 config.js";return;}
+  const r=await fetch(window.API_URL); const j=await r.json(); rows=j.rows||[];
+  const g=sel.value;
+  const f=g==="決策組"?rows:rows.filter(x=>x[3]===g);
+  document.getElementById('meta').textContent=`共 ${f.length} 筆｜載入時間 ${new Date().toLocaleString()}`;
+  document.querySelector('#tbl tbody').innerHTML=f.map((r,i)=>`<tr>
+<td>${r[0]}</td><td>${r[2]}</td>
+<td><select data-k="status"><option ${r[4]==="未開始"?"selected":""}>未開始</option><option ${r[4]==="待辦"?"selected":""}>待辦</option><option ${r[4]==="進行中"?"selected":""}>進行中</option><option ${r[4]==="已完成"?"selected":""}>已完成</option><option ${r[4]==="卡住"?"selected":""}>卡住</option></select></td>
+<td><input data-k="pct" type="number" min="0" max="100" value="${r[5]||0}"></td>
+<td><input data-k="owner" value="${r[6]||""}"></td>
+<td><input data-k="due" value="${r[7]||""}" placeholder="YYYY-MM-DD"></td>
+<td><input data-k="done" value="${r[9]||""}" placeholder="YYYY-MM-DD"></td>
+<td><input data-k="note" value="${r[8]||""}"></td>
+<td><button onclick="save('${r[0]}',this)">儲存</button></td></tr>`).join("");
+}
+async function save(id,btn){
+  const tr=btn.closest('tr'); const get=k=>tr.querySelector(`[data-k="${k}"]`).value;
+  const body={action:"update",id,group:sel.value,password:document.getElementById('pwd').value,who:document.getElementById('who').value,status:get('status'),pct:get('pct'),owner:get('owner'),due:get('due'),done:get('done'),note:get('note')};
+  const r=await fetch(window.API_URL,{method:"POST",body:JSON.stringify(body)});
+  const j=await r.json();
+  document.getElementById('msg').textContent=j.ok?`已儲存 ${id}`:`儲存失敗：${j.error||"密碼錯誤或無權限"}`;
+}
+</script>
+</body>
+</html>

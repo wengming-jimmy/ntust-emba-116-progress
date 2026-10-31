@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>台科大 EMBA 116 新研營籌備進度</title>
+<style>
+body{font-family:system-ui,-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;margin:0;padding:16px;background:#f6f8f7;color:#222}
+h1{font-size:22px;margin:4px 0} p{color:#555;line-height:1.6}
+.card{background:#fff;border:1px solid #ddd;border-radius:12px;padding:14px;margin:12px 0}
+.bar{height:14px;background:#e5e5e5;border-radius:7px;overflow:hidden}
+.bar>div{height:100%;background:#2a9d8f;width:0%}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{border-bottom:1px solid #eee;padding:8px;text-align:left;vertical-align:top}
+select,input{padding:8px;border:1px solid #ccc;border-radius:8px;max-width:100%}
+a{color:#1a7f64}
+.note{font-size:13px;color:#666}
+</style>
+</head>
+<body>
+<h1>台科大 EMBA 116 新研營籌備進度</h1>
+<p>營期：民國 116 年 6 月 11 日（五）至 13 日（日）｜前台供大家查看進度，改進度請用組長後台（公開頁不放後台連結）。總召、執行長、副執行長姓名暫不列出。</p>
+<div class="card">
+<div id="summary">載入中…</div>
+<div class="bar"><div id="bar"></div></div>
+<p>
+<label>組別 <select id="fGroup"><option value="">全部組別</option></select></label>
+<label>狀態 <select id="fStatus"><option value="">全部狀態</option><option>已完成</option><option>進行中</option><option>待辦</option><option>未開始</option><option>卡住</option></select></label>
+<button onclick="load()">重新載入</button>
+</p>
+<p class="note" id="src"></p>
+</div>
+<div class="card" style="overflow-x:auto">
+<table id="tbl"><thead><tr><th>編號</th><th>時間</th><th>工作項目</th><th>主責組</th><th>狀態</th><th>進度</th><th>負責人</th><th>預定完成日</th><th>追蹤備註</th></tr></thead><tbody></tbody></table>
+</div>
+<script src="config.js"></script>
+<script>
+const FALLBACK=[
+["P01","2026-10-30–31","組織架構討論、和總召開會","決策組","已完成",100,"","","架構表 5 頁版已定稿"],
+["P02","下週（2026-11 月上旬，日期待定）","第一次核心會議，確認組長人選","決策組","待辦",0,"","","決策組加 11 組組長，含競賽組和人事組"],
+["P03","組長確認後，2026-11 月中下旬","招募小隊輔","隊輔組","未開始",0,"","","隊輔組討論基準 22 人"],
+["P04","組長確認後，2026-11 月中下旬","社團社長加入活動組","活動組","未開始",0,"","","協調第二天小隊會戰關卡"],
+["P05","2026-11 月中下旬","各組組員第一次定案、115 級傳承交接","各組組長","未開始",0,"","","人事組彙整主名冊"],
+["P06","2026-11–12 月","飯店場勘、飯店定案、飯店預定","行政組","未開始",0,"","","房數以人事組核定總人數為準"],
+["P07","2026-12 月","總預算表製作、資訊系統轉移","財務組","未開始",0,"","","總預算先於訂金"],
+["P08","2027-01 月","第一次籌備大會、主題提案","決策組","未開始",0,"","","116 日期待核心會議定"],
+["P09","2027-01–03 月","外包作業提案和廠商定案、簽約","活動組","未開始",0,"","","第二天關主不外包"],
+["P10","2027-01–03 月","主題定案、電子文宣設計、衣服和配件設計發包","文宣組","未開始",0,"","","主題由決策組核定後才發包"],
+["P11","2027-02–03 月","新生招生資訊公開、報名 G 單公布、公關邀約啟動","資訊組","未開始",0,"","","公關名單送人事組核定類別"],
+["P12","2027-02–03 月","各組工作細項定案和日程、工作人員名單定案、小隊輔營前訓練","各組組長","未開始",0,"","",""],
+["P13","2027-04–05 月","團建和公關作業確認、場勘確認、大圖和紙本文宣、衣服配件收貨準備","活動組","未開始",0,"","","團建公司是否仍用，待核心會議定"],
+["P14","2027-04–05 月","名冊和名牌製作、小隊輔狀況回報和關懷、現場 PPT 製作、流程演練","行政組","未開始",0,"","","名冊以人事組主名冊為準"],
+["P15","2027-06 月上旬","所有作業再確認、公關邀約名單確認、最後演練","決策組","未開始",0,"","","計分辦法、獎項清單由競賽組先送決策組核定"],
+["P16","2027-06-11–13","新研營","全體","未開始",0,"","","第二天小隊會戰由社團擔任關主、競賽組負責全部計分"],
+["P17","2027-06 月下旬","帳務整理、經費結算、參加人員名冊整理、作業彙整傳承、慶功宴","財務組","未開始",0,"","","收款和對帳分開覆核"]
+];
+const GROUPS=["決策組","行政組","活動組","財務組","資訊組","文宣組","公關組","隊輔組","機動組","攝影組","競賽組","人事組","各組組長","全體"];
+const sel=document.getElementById('fGroup'); GROUPS.forEach(g=>{const o=document.createElement('option');o.textContent=g;sel.appendChild(o);});
+async function load(){
+  let rows=FALLBACK, from="後端尚未接通，顯示 Excel 初始資料，正式使用前請先完成後端部署";
+  if(window.API_URL){
+    try{const r=await fetch(window.API_URL); const j=await r.json(); if(j && j.rows && j.rows.length){rows=j.rows; from="資料來源：試算表後端，"+(j.updatedAt||"");}}
+    catch(e){from="後端讀取失敗，顯示初始資料，請用 Chrome 直接開啟本頁再試一次";}
+  }
+  document.getElementById('src').textContent=from;
+  const fg=sel.value, fs=document.getElementById('fStatus').value;
+  const f=rows.filter(r=>(!fg||r[3]===fg)&&(!fs||r[4]===fs));
+  const done=rows.filter(r=>r[4]==="已完成").length;
+  const avg=rows.length?Math.round(rows.reduce((s,r)=>s+Number(r[5]||0),0)/rows.length):0;
+  document.getElementById('summary').textContent=`共 ${rows.length} 項｜已完成 ${done} 項｜平均進度 ${avg}%`;
+  document.getElementById('bar').style.width=avg+"%";
+  document.querySelector('#tbl tbody').innerHTML=f.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}%</td><td>${r[6]||""}</td><td>${r[7]||""}</td><td>${r[8]||""}</td></tr>`).join("");
+}
+sel.onchange=load; document.getElementById('fStatus').onchange=load; load();
+</script>
+</body>
+</html>
