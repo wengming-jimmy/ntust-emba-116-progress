@@ -25,6 +25,19 @@ button{padding:10px 16px;border:0;border-radius:8px;background:#1a7f64;color:#ff
 <p><button onclick="load()">載入我這組的進度</button> <span id="msg" class="note"></span></p>
 <p class="note" id="meta"></p>
 </div>
+<div class="card">
+<h2 style="font-size:18px;margin:0 0 8px">新增進度</h2>
+<p class="note">先在上面選組別、輸密碼、填更新人姓名，再填下面這張。新增後編號由後端自動接續（現有最大編號 +1），不用自己填編號。非決策組只能新增自己組的項目，決策組可以在下面選任何主責組。</p>
+<p><label>時間 <input id="newTime" placeholder="例如：2026-12 月"></label></p>
+<p><label>工作項目（必填） <input id="newItem" placeholder="例如：第二次籌備大會"></label></p>
+<p><label>主責組 <select id="newGroup"></select></label></p>
+<p><label>狀態 <select id="newStatus"><option>未開始</option><option>待辦</option><option>進行中</option><option>已完成</option><option>卡住</option></select></label></p>
+<p><label>進度% <input id="newPct" type="number" min="0" max="100" value="0"></label></p>
+<p><label>負責人 <input id="newOwner" placeholder="留白等核心會議後再填也可以"></label></p>
+<p><label>預定完成日 <input id="newDue" placeholder="YYYY-MM-DD"></label></p>
+<p><label>追蹤備註 <textarea id="newNote" rows="2"></textarea></label></p>
+<p><button onclick="addItem()">新增這一項</button> <span id="addMsg" class="note"></span></p>
+</div>
 <div class="card" style="overflow-x:auto">
 <table id="tbl"><thead><tr><th>編號</th><th>工作項目</th><th>狀態</th><th>進度%</th><th>負責人</th><th>預定完成日</th><th>實際完成日</th><th>追蹤備註</th><th></th></tr></thead><tbody></tbody></table>
 </div>
@@ -33,6 +46,17 @@ button{padding:10px 16px;border:0;border-radius:8px;background:#1a7f64;color:#ff
 <script>
 const GROUPS=["決策組","行政組","活動組","財務組","資訊組","文宣組","公關組","隊輔組","機動組","攝影組","競賽組","人事組","各組組長","全體"];
 const sel=document.getElementById('group'); GROUPS.forEach(g=>{const o=document.createElement('option');o.textContent=g;sel.appendChild(o);});
+const newSel=document.getElementById('newGroup'); GROUPS.forEach(g=>{const o=document.createElement('option');o.textContent=g;newSel.appendChild(o);});
+sel.addEventListener('change',()=>{newSel.value=sel.value;});
+async function addItem(){
+  if(!window.API_URL){document.getElementById('addMsg').textContent="後端尚未接通，請先完成 Apps Script 部署並填入 config.js";return;}
+  const item=document.getElementById('newItem').value.trim();
+  if(!item){document.getElementById('addMsg').textContent="請先填工作項目";return;}
+  const body={action:"add",group:sel.value,password:document.getElementById('pwd').value,who:document.getElementById('who').value,time:document.getElementById('newTime').value,item:item,itemGroup:newSel.value,status:document.getElementById('newStatus').value,pct:document.getElementById('newPct').value,owner:document.getElementById('newOwner').value,due:document.getElementById('newDue').value,note:document.getElementById('newNote').value};
+  const r=await fetch(window.API_URL,{method:"POST",body:JSON.stringify(body)});
+  const j=await r.json();
+  document.getElementById('addMsg').textContent=j.ok?`已新增 ${j.id}，請按上面「載入我這組的進度」確認`:`新增失敗：${j.error||"密碼錯誤或無權限"}`;
+}
 let rows=[];
 async function load(){
   if(!window.API_URL){document.getElementById('msg').textContent="後端尚未接通，請先完成 Apps Script 部署並填入 config.js";return;}
